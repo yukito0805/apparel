@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栄養検索</title>
+<style>
+body {
+  font-family: sans-serif;
+  background:#f9fafb;
+  padding:40px;
+}
+.container {
+  max-width:800px;
+  margin:auto;
+}
+input {
+  width:70%;
+  padding:10px;
+}
+button {
+  padding:10px 15px;
+}
+.result-item {
+  background:#fff;
+  padding:15px;
+  margin-top:15px;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>栄養検索</h1>
+
+<input type="text" id="searchInput" placeholder="例：βカロテン / にんじん">
+<button onclick="search()">検索</button>
+
+<div id="result"></div>
+</div>
+
+<script>
+
+const GAS_URL = "あなたのexecURL";
+
+async function search() {
+
+  const keyword = document.getElementById("searchInput").value;
+
+  const res = await fetch(GAS_URL + "?q=" + encodeURIComponent(keyword));
+  const data = await res.json();
+
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
+
+  if (data.length === 0) {
+    resultDiv.innerHTML = "該当なし";
+    return;
+  }
+
+  data.forEach(item => {
+
+    const div = document.createElement("div");
+    div.className = "result-item";
+
+    div.innerHTML = `
+      <strong>${item.name}</strong>（${item.category}）<br>
+      栄養素：${item.nutrient}<br>
+      ${item.note || ""}
+    `;
+
+    resultDiv.appendChild(div);
+
+  });
+
+}
+
+</script>
+
+</body>
+</html>
