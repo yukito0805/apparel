@@ -43,38 +43,48 @@ button {
 
 <script>
 
-const GAS_URL = "あなたのexecURL";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyiSpXTf9JK2asp6chdMQwpx2xPJhbmQINkl0Is5wOOiQl8zCtxxIXODQp410hEhPir/exec";
 
 async function search() {
 
   const keyword = document.getElementById("searchInput").value;
 
-  const res = await fetch(GAS_URL + "?q=" + encodeURIComponent(keyword));
-  const data = await res.json();
+  try {
 
-  const resultDiv = document.getElementById("result");
-  resultDiv.innerHTML = "";
+    const res = await fetch(GAS_URL + "?q=" + encodeURIComponent(keyword));
+    const text = await res.text();
 
-  if (data.length === 0) {
-    resultDiv.innerHTML = "該当なし";
-    return;
+    console.log("返却データ:", text);
+
+    const data = JSON.parse(text);
+
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
+
+    if (data.length === 0) {
+      resultDiv.innerHTML = "該当なし";
+      return;
+    }
+
+    data.forEach(item => {
+
+      const div = document.createElement("div");
+      div.className = "result-item";
+
+      div.innerHTML = `
+        <strong>${item.name}</strong>（${item.category}）<br>
+        栄養素：${item.nutrient}<br>
+        ${item.note || ""}
+      `;
+
+      resultDiv.appendChild(div);
+
+    });
+
+  } catch (error) {
+    document.getElementById("result").innerHTML = "データ取得エラー";
+    console.error(error);
   }
-
-  data.forEach(item => {
-
-    const div = document.createElement("div");
-    div.className = "result-item";
-
-    div.innerHTML = `
-      <strong>${item.name}</strong>（${item.category}）<br>
-      栄養素：${item.nutrient}<br>
-      ${item.note || ""}
-    `;
-
-    resultDiv.appendChild(div);
-
-  });
-
 }
 
 </script>
