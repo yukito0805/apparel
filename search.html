@@ -31,20 +31,22 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyiSpXTf9JK2asp6chdMQwp
 
 let allData = [];
 
-async function loadData(){
+async function loadData() {
   const res = await fetch(GAS_URL);
+  if (!res.ok) {
+    console.error("通信失敗");
+    return;
+  }
   allData = await res.json();
 }
 
-loadData();
-
-function search(){
+function search() {
 
   const keyword = document.getElementById("keyword").value.trim();
   const container = document.getElementById("results");
   container.innerHTML = "";
 
-  if(!keyword){
+  if (!keyword) {
     container.innerHTML = "<div class='empty'>検索ワードを入力してください</div>";
     return;
   }
@@ -53,7 +55,7 @@ function search(){
     item.栄養素 && item.栄養素.includes(keyword)
   );
 
-  if(filtered.length === 0){
+  if (filtered.length === 0) {
     container.innerHTML = "<div class='empty'>該当なし</div>";
     return;
   }
