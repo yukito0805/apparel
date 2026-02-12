@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トップス</title>
+
+<style>
+body {
+    font-family: sans-serif;
+    background: #f4f4f4;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+h2 {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.full {
+    grid-column: 1 / -1;
+}
+
+label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.rank-group {
+    display: flex;
+    gap: 12px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+}
+
+button + button {
+    margin-left: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>トップス</h2>
+
+<form id="itemForm">
+
+<div class="grid">
+
+<div>
+<label>採寸者</label>
+<input type="text" name="measurer">
+</div>
+
+<div>
+<label>再採寸者</label>
+<input type="text" name="remeasurer">
+</div>
+
+<div>
+<label>着丈 (cm)</label>
+<input type="number" step="0.1" name="length">
+</div>
+
+<div>
+<label>肩幅 (cm)</label>
+<input type="number" step="0.1" name="shoulder">
+</div>
+
+<div>
+<label>身幅 (cm)</label>
+<input type="number" step="0.1" name="width">
+</div>
+
+<div>
+<label>袖丈 (cm)</label>
+<input type="number" step="0.1" name="sleeve">
+</div>
+
+<div>
+<label>総丈 (cm)</label>
+<input type="number" step="0.1" name="totalLength">
+</div>
+
+<div>
+<label>脇下 (cm)</label>
+<input type="number" step="0.1" name="underarm">
+</div>
+
+<div>
+<label>ゆき丈 (cm)</label>
+<input type="number" step="0.1" name="yuki">
+</div>
+
+<div>
+<label>ネックタイプ</label>
+<input type="text" name="neck">
+</div>
+
+<div>
+<label>袖タイプ</label>
+<input type="text" name="sleeveType">
+</div>
+
+<div>
+<label>カテゴリー</label>
+<input type="text" name="category">
+</div>
+
+<div>
+<label>上記にないカテゴリー</label>
+<input type="text" name="otherCategory">
+</div>
+
+<div>
+<label>表記サイズ</label>
+<input type="text" name="size">
+</div>
+
+<div class="full">
+<label>素材（複数ある場合は改行で入力）</label>
+<textarea name="material" rows="4"></textarea>
+</div>
+
+<div>
+<label>色柄</label>
+<input type="text" name="color">
+</div>
+
+<div class="full">
+<label>使用感</label>
+<div class="rank-group">
+<label><input type="radio" name="rank" value="N"> N</label>
+<label><input type="radio" name="rank" value="S"> S</label>
+<label><input type="radio" name="rank" value="A"> A</label>
+<label><input type="radio" name="rank" value="B"> B</label>
+<label><input type="radio" name="rank" value="C"> C</label>
+<label><input type="radio" name="rank" value="D"> D</label>
+</div>
+</div>
+
+<div class="full">
+<label>不備・汚れ</label>
+<textarea name="defect"></textarea>
+</div>
+
+</div>
+
+<button type="button" id="saveBtn">保存</button>
+
+</form>
+
+</div>
+
+<script>
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzo4ToXv11WlxvMFU9nfjyOg6HTpWxyupO2WQRueVuawaUq3zT5LcSFqdUHdp2QuDd9/exec";
+
+document.getElementById("saveBtn").addEventListener("click", async function() {
+
+    const form = document.getElementById("itemForm");
+    const formData = new FormData(form);
+    const data = {};
+
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
+
+    try {
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            alert("保存しました");
+            form.reset();
+        } else {
+            alert("保存に失敗しました");
+        }
+
+    } catch (error) {
+        alert("通信エラー（デプロイ設定を確認）");
+        console.error(error);
+    }
+});
+
+</script>
+
+</body>
+</html>
