@@ -27,7 +27,7 @@
 
 <script>
 
-const GAS_URL = "あなたのexecURL";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyiSpXTf9JK2asp6chdMQwpx2xPJhbmQINkl0Is5wOOiQl8zCtxxIXODQp410hEhPir/exec";
 
 let allData = [];
 
@@ -35,6 +35,8 @@ async function loadData(){
   const res = await fetch(GAS_URL);
   allData = await res.json();
 }
+
+loadData();
 
 function search(){
 
