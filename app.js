@@ -1,12 +1,4 @@
-/**
- * YOSAKOI Gallery Frontend
- * - Teams list -> team gallery
- * - Tap image => lightbox
- * - Long-press friendly: "Open original" link
- * - Multi-select + Download Zip (JSZip + FileSaver)
- */
-
-const API_BASE = "https://script.google.com/macros/s/AKfycbw73ILZG4Ap2cfnvAB67zI47FINzYF6VyW9MsWLkJGjUqh65TSgDPC9ALVrdyngz6z3/exec";
+const API_BASE = location.origin + location.pathname;
 
 // DOM
 const titleEl = document.getElementById("title");
@@ -61,11 +53,8 @@ function escapeHtml(s) {
 }
 
 function setRoute(teamId = "") {
-  if (!teamId) {
-    history.pushState({}, "", location.pathname);
-  } else {
-    history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
-  }
+  if (!teamId) history.pushState({}, "", location.pathname);
+  else history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
   renderByRoute();
 }
 
@@ -97,7 +86,6 @@ function setSelecting(on) {
   document.querySelectorAll(".photo").forEach((el) => {
     if (selecting) el.classList.add("is-selecting");
     else el.classList.remove("is-selecting");
-
     const checkboxWrap = el.querySelector(".photo__check");
     if (checkboxWrap) checkboxWrap.style.display = selecting ? "flex" : "none";
   });
@@ -196,9 +184,7 @@ function renderGallery() {
       }, 650);
     }, { passive: true });
 
-    imgEl.addEventListener("touchend", () => {
-      clearTimeout(longPressTimer);
-    }, { passive: true });
+    imgEl.addEventListener("touchend", () => clearTimeout(longPressTimer), { passive: true });
 
     photosGrid.appendChild(wrap);
   });
@@ -211,7 +197,6 @@ function renderGallery() {
 function toggleSelect(photo, force) {
   const exists = selected.has(photo.fileId);
   const shouldSelect = typeof force === "boolean" ? force : !exists;
-
   if (shouldSelect) selected.set(photo.fileId, { fileId: photo.fileId, title: photo.title || "" });
   else selected.delete(photo.fileId);
 }
@@ -230,6 +215,14 @@ function closeLightbox() {
   openOriginalBtn.href = "#";
 }
 
+function sanitizeFileName(name) {
+  return String(name || "file")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
 async function downloadSelectedAsZip() {
   const items = Array.from(selected.values());
   if (items.length === 0) return;
@@ -243,24 +236,14 @@ async function downloadSelectedAsZip() {
     const safeTitle = it.title ? sanitizeFileName(it.title) : `photo_${String(i + 1).padStart(3, "0")}`;
     const fileName = `${safeTitle}_${it.fileId}.jpg`;
 
-    const url = apiUrl({ action: "img", id: it.fileId, download: "1" });
-    const res = await fetch(url);
+    const res = await fetch(imageUrl(it.fileId));
     if (!res.ok) throw new Error(`Fetch failed: ${it.fileId}`);
-
     const blob = await res.blob();
     folder.file(fileName, blob);
   }
 
   const blobZip = await zip.generateAsync({ type: "blob" });
   saveAs(blobZip, `${sanitizeFileName(folderName)}.zip`);
-}
-
-function sanitizeFileName(name) {
-  return String(name || "file")
-    .replace(/[\\/:*?"<>|]/g, "_")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 80);
 }
 
 async function renderByRoute() {
@@ -300,19 +283,13 @@ clearSelectionBtn.addEventListener("click", () => {
 });
 
 closeLightboxBtn.addEventListener("click", closeLightbox);
-lightbox.addEventListener("click", (e) => {
-  if (e.target === lightbox) closeLightbox();
-});
+lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
 
 downloadFab.addEventListener("click", async () => {
   downloadFab.disabled = true;
   downloadFab.style.opacity = "0.75";
-  try {
-    await downloadSelectedAsZip();
-  } finally {
-    downloadFab.disabled = false;
-    downloadFab.style.opacity = "1";
-  }
+  try { await downloadSelectedAsZip(); }
+  finally { downloadFab.disabled = false; downloadFab.style.opacity = "1"; }
 });
 
 (async function init() {
