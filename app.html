@@ -1,8 +1,8 @@
 /**
- * YOSAKOI Gallery Frontend (Single-origin)
+ * YOSAKOI Gallery Frontend
  * - Teams -> Gallery
- * - Tap image => Lightbox
- * - Select mode => ZIP Download
+ * - Tap => Lightbox
+ * - Select mode => ZIP download button
  */
 
 const API_BASE = location.origin + location.pathname;
@@ -60,11 +60,8 @@ function escapeHtml(s) {
 }
 
 function setRoute(teamId = "") {
-  if (!teamId) {
-    history.pushState({}, "", location.pathname);
-  } else {
-    history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
-  }
+  if (!teamId) history.pushState({}, "", location.pathname);
+  else history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
   renderByRoute();
 }
 
@@ -94,9 +91,7 @@ function setSelecting(on) {
   selectToggleBtn.textContent = selecting ? "完了" : "選択";
 
   document.querySelectorAll(".photo").forEach((el) => {
-    if (selecting) el.classList.add("is-selecting");
-    else el.classList.remove("is-selecting");
-
+    el.classList.toggle("is-selecting", selecting);
     const checkboxWrap = el.querySelector(".photo__check");
     if (checkboxWrap) checkboxWrap.style.display = selecting ? "flex" : "none";
   });
@@ -187,7 +182,7 @@ function renderGallery() {
       });
     }
 
-    // 長押し：新タブで画像を開く（保存しやすい）
+    // long press -> open image in new tab (easier to save)
     imgEl.addEventListener("touchstart", () => {
       if (selecting) return;
       clearTimeout(longPressTimer);
@@ -196,9 +191,7 @@ function renderGallery() {
       }, 650);
     }, { passive: true });
 
-    imgEl.addEventListener("touchend", () => {
-      clearTimeout(longPressTimer);
-    }, { passive: true });
+    imgEl.addEventListener("touchend", () => clearTimeout(longPressTimer), { passive: true });
 
     photosGrid.appendChild(wrap);
   });
@@ -211,7 +204,6 @@ function renderGallery() {
 function toggleSelect(photo, force) {
   const exists = selected.has(photo.fileId);
   const shouldSelect = typeof force === "boolean" ? force : !exists;
-
   if (shouldSelect) selected.set(photo.fileId, { fileId: photo.fileId, title: photo.title || "" });
   else selected.delete(photo.fileId);
 }
@@ -253,7 +245,6 @@ async function downloadSelectedAsZip() {
 
     const res = await fetch(imageUrl(it.fileId));
     if (!res.ok) throw new Error(`Fetch failed: ${it.fileId}`);
-
     const blob = await res.blob();
     folder.file(fileName, blob);
   }
@@ -299,19 +290,13 @@ clearSelectionBtn.addEventListener("click", () => {
 });
 
 closeLightboxBtn.addEventListener("click", closeLightbox);
-lightbox.addEventListener("click", (e) => {
-  if (e.target === lightbox) closeLightbox();
-});
+lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
 
 downloadFab.addEventListener("click", async () => {
   downloadFab.disabled = true;
   downloadFab.style.opacity = "0.75";
-  try {
-    await downloadSelectedAsZip();
-  } finally {
-    downloadFab.disabled = false;
-    downloadFab.style.opacity = "1";
-  }
+  try { await downloadSelectedAsZip(); }
+  finally { downloadFab.disabled = false; downloadFab.style.opacity = "1"; }
 });
 
 (async function init() {
