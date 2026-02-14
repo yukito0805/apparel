@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>よさこいギャラリー</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style><?!= include('styles'); ?></style>
 </head>
 <body>
   <header class="topbar">
@@ -19,13 +19,11 @@
   </header>
 
   <main class="container">
-    <!-- Teams View -->
     <section id="teamsView" class="view">
       <div id="teamsGrid" class="grid"></div>
       <div id="teamsEmpty" class="empty" hidden>チームがありません</div>
     </section>
 
-    <!-- Gallery View -->
     <section id="galleryView" class="view" hidden>
       <div class="subinfo">
         <div class="chip" id="teamChip"></div>
@@ -37,7 +35,6 @@
     </section>
   </main>
 
-  <!-- Lightbox -->
   <div id="lightbox" class="lightbox" hidden>
     <div class="lightbox__top">
       <div class="lightbox__title" id="lightboxTitle"></div>
@@ -54,16 +51,14 @@
     </div>
   </div>
 
-  <!-- Floating Download Button -->
   <button id="downloadFab" class="fab" hidden>
     <span>Download</span>
     <span id="downloadCount" class="fab__count">0</span>
   </button>
 
-  <!-- JSZip + FileSaver (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
-  <script src="app.js"></script>
+  <script><?!= include('app'); ?></script>
 </body>
 </html>
