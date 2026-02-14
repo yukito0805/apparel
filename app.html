@@ -1,203 +1,228 @@
-const API_BASE = location.origin + location.pathname;
+(() => {
+  const APP_URL = window.__APP_URL__;
 
-const titleEl = document.getElementById("title");
-const backBtn = document.getElementById("backBtn");
+  const teamListEl = document.getElementById("teamList");
+  const teamSearchEl = document.getElementById("teamSearch");
+  const galleryEl = document.getElementById("gallery");
+  const loadingEl = document.getElementById("loading");
+  const emptyEl = document.getElementById("empty");
+  const currentTeamNameEl = document.getElementById("currentTeamName");
+  const currentTeamMetaEl = document.getElementById("currentTeamMeta");
+  const downloadZipBtn = document.getElementById("downloadZipBtn");
+  const reloadBtn = document.getElementById("reloadBtn");
 
-const teamsView = document.getElementById("teamsView");
-const teamsGrid = document.getElementById("teamsGrid");
-const teamsEmpty = document.getElementById("teamsEmpty");
+  const lightbox = document.getElementById("lightbox");
+  const lightboxBackdrop = document.getElementById("lightboxBackdrop");
+  const lightboxClose = document.getElementById("lightboxClose");
+  const lightboxTitle = document.getElementById("lightboxTitle");
+  const lightboxImg = document.getElementById("lightboxImg");
 
-const galleryView = document.getElementById("galleryView");
-const teamChip = document.getElementById("teamChip");
-const photosGrid = document.getElementById("photosGrid");
-const photosEmpty = document.getElementById("photosEmpty");
+  let teams = [];
+  let activeTeam = null;
 
-const selectToggleBtn = document.getElementById("selectToggleBtn");
-const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+  let nextToken = "";
+  let isLoading = false;
+  let loadedCount = 0;
 
-const lightbox = document.getElementById("lightbox");
-const lightboxImg = document.getElementById("lightboxImg");
-const lightboxTitle = document.getElementById("lightboxTitle");
-const closeLightboxBtn = document.getElementById("closeLightboxBtn");
-const openOriginalBtn = document.getElementById("openOriginalBtn");
-
-const downloadFab = document.getElementById("downloadFab");
-const downloadCount = document.getElementById("downloadCount");
-
-let teams = [];
-let currentTeam = null;
-let photos = [];
-let selecting = false;
-let selected = new Map();
-let longPressTimer = null;
-
-function apiUrl(params) {
-  const u = new URL(API_BASE);
-  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
-  return u.toString();
-}
-function imageUrl(fileId) { return apiUrl({ action: "img", id: fileId }); }
-
-function escapeHtml(s) {
-  return String(s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function setRoute(teamId = "") {
-  if (!teamId) history.pushState({}, "", location.pathname);
-  else history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
-  renderByRoute();
-}
-function getRouteTeamId() {
-  const m = (location.hash || "").match(/team=([^&]+)/);
-  return m ? decodeURIComponent(m[1]) : "";
-}
-
-function updateTopbar() {
-  const inGallery = !!currentTeam;
-  backBtn.hidden = !inGallery;
-  selectToggleBtn.hidden = !inGallery;
-  clearSelectionBtn.hidden = !(inGallery && selecting);
-  titleEl.textContent = inGallery ? "ギャラリー" : "チーム一覧";
-}
-
-function updateFab() {
-  const count = selected.size;
-  downloadCount.textContent = String(count);
-  downloadFab.hidden = count === 0;
-}
-
-async function fetchTeams() {
-  const res = await fetch(apiUrl({ action: "listTeams" }));
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "listTeams failed");
-  return data.teams || [];
-}
-
-async function fetchPhotos(teamId) {
-  const res = await fetch(apiUrl({ action: "listPhotos", teamId }));
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "listPhotos failed");
-  return data.photos || [];
-}
-
-function renderTeams() {
-  teamsView.hidden = false;
-  galleryView.hidden = true;
-
-  teamsGrid.innerHTML = "";
-  teamsEmpty.hidden = teams.length !== 0;
-
-  teams.forEach((t) => {
-    const card = document.createElement("article");
-    card.className = "card";
-    card.innerHTML = `
-      <img class="card__img" src="${t.coverFileId ? imageUrl(t.coverFileId) : ""}" alt="">
-      <div class="card__body">
-        <p class="card__title">${escapeHtml(t.teamName || t.teamId)}</p>
-        <p class="card__sub">${escapeHtml(t.teamId)}</p>
-      </div>
-    `;
-    card.addEventListener("click", () => setRoute(t.teamId));
-    teamsGrid.appendChild(card);
-  });
-
-  updateTopbar();
-}
-
-function openLightbox(photo) {
-  lightbox.hidden = false;
-  lightboxTitle.textContent = photo.title || "";
-  lightboxImg.src = imageUrl(photo.fileId);
-  openOriginalBtn.href = imageUrl(photo.fileId);
-}
-function closeLightbox() {
-  lightbox.hidden = true;
-  lightboxImg.src = "";
-  lightboxTitle.textContent = "";
-  openOriginalBtn.href = "#";
-}
-
-function toggleSelect(photo, force) {
-  const exists = selected.has(photo.fileId);
-  const shouldSelect = typeof force === "boolean" ? force : !exists;
-  if (shouldSelect) selected.set(photo.fileId, { fileId: photo.fileId, title: photo.title || "" });
-  else selected.delete(photo.fileId);
-}
-
-function renderGallery() {
-  teamsView.hidden = true;
-  galleryView.hidden = false;
-
-  teamChip.textContent = currentTeam?.teamName || currentTeam?.teamId || "";
-  photosGrid.innerHTML = "";
-  photosEmpty.hidden = photos.length !== 0;
-
-  photos.forEach((p) => {
-    const wrap = document.createElement("div");
-    wrap.className = "photo";
-    wrap.innerHTML = `
-      <img src="${imageUrl(p.fileId)}" alt="${escapeHtml(p.title || "")}" loading="lazy">
-      <div class="photo__meta">
-        <div class="photo__title">${escapeHtml(p.title || "")}</div>
-      </div>
-    `;
-
-    const imgEl = wrap.querySelector("img");
-
-    wrap.addEventListener("click", () => {
-      if (selecting) {
-        toggleSelect(p);
-        updateFab();
-      } else {
-        openLightbox(p);
-      }
+  function apiUrl(op, params = {}) {
+    const u = new URL(APP_URL);
+    u.searchParams.set("action", "api");
+    u.searchParams.set("op", op);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) u.searchParams.set(k, String(v));
     });
-
-    imgEl.addEventListener("touchstart", () => {
-      if (selecting) return;
-      clearTimeout(longPressTimer);
-      longPressTimer = setTimeout(() => {
-        window.open(imageUrl(p.fileId), "_blank", "noopener");
-      }, 650);
-    }, { passive: true });
-    imgEl.addEventListener("touchend", () => clearTimeout(longPressTimer), { passive: true });
-
-    photosGrid.appendChild(wrap);
-  });
-
-  updateTopbar();
-  updateFab();
-}
-
-async function renderByRoute() {
-  const teamId = getRouteTeamId();
-
-  if (!teamId) {
-    currentTeam = null;
-    selecting = false;
-    selected.clear();
-    updateFab();
-    renderTeams();
-    return;
+    return u.toString();
   }
 
-  currentTeam = teams.find((t) => t.teamId === teamId) || { teamId, teamName: teamId };
-  photos = await fetchPhotos(teamId);
-  selecting = false;
-  selected.clear();
-  renderGallery();
-}
+  function imgUrl(fileId, thumb = true) {
+    const u = new URL(APP_URL);
+    u.searchParams.set("action", "img");
+    u.searchParams.set("id", fileId);
+    if (thumb) u.searchParams.set("thumb", "1");
+    return u.toString();
+  }
 
-backBtn.addEventListener("click", () => setRoute(""));
-closeLightboxBtn.addEventListener("click", closeLightbox);
-lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
+  function zipUrl(folderId) {
+    const u = new URL(APP_URL);
+    u.searchParams.set("action", "zip");
+    u.searchParams.set("folderId", folderId);
+    return u.toString();
+  }
 
-(async function init() {
-  teams = await fetchTeams();
-  await renderByRoute();
+  function setLoading(on) { loadingEl.classList.toggle("hidden", !on); }
+  function setEmpty(on) { emptyEl.classList.toggle("hidden", !on); }
+
+  function clearGallery() {
+    galleryEl.innerHTML = "";
+    loadedCount = 0;
+  }
+
+  function renderTeams(list) {
+    teamListEl.innerHTML = "";
+    list.forEach((t) => {
+      const item = document.createElement("div");
+      item.className = "teamItem" + (activeTeam && activeTeam.id === t.id ? " teamItem--active" : "");
+
+      const badge = document.createElement("div");
+      badge.className = "teamBadge";
+
+      const name = document.createElement("div");
+      name.className = "teamName";
+      name.textContent = t.name;
+
+      item.appendChild(badge);
+      item.appendChild(name);
+
+      item.addEventListener("click", () => selectTeam(t));
+      teamListEl.appendChild(item);
+    });
+  }
+
+  async function loadTeams() {
+    setLoading(true);
+    try {
+      const res = await fetch(apiUrl("listTeams"));
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "listTeams failed");
+      teams = data.teams || [];
+      renderTeams(teams);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function filterTeams() {
+    const q = (teamSearchEl.value || "").trim().toLowerCase();
+    if (!q) return renderTeams(teams);
+    renderTeams(teams.filter(t => (t.name || "").toLowerCase().includes(q)));
+  }
+
+  async function selectTeam(team) {
+    activeTeam = team;
+    nextToken = "";
+    isLoading = false;
+    clearGallery();
+    setEmpty(false);
+
+    currentTeamNameEl.textContent = team.name;
+    currentTeamMetaEl.textContent = "読み込み待機…";
+    downloadZipBtn.disabled = false;
+
+    await loadMorePhotos(true);
+    renderTeams((teamSearchEl.value || "").trim()
+      ? teams.filter(t => (t.name||"").toLowerCase().includes(teamSearchEl.value.trim().toLowerCase()))
+      : teams
+    );
+  }
+
+  async function loadMorePhotos(resetMeta = false) {
+    if (!activeTeam || isLoading) return;
+    if (nextToken === null) return;
+
+    isLoading = true;
+    setLoading(true);
+
+    try {
+      const res = await fetch(apiUrl("listPhotos", {
+        folderId: activeTeam.id,
+        pageToken: nextToken || "",
+        pageSize: 60
+      }));
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "listPhotos failed");
+
+      const photos = data.photos || [];
+      const token = (data.nextToken || "");
+      nextToken = token ? token : null;
+
+      if (resetMeta) currentTeamMetaEl.textContent = "";
+
+      if (photos.length === 0 && loadedCount === 0) {
+        setEmpty(true);
+        currentTeamMetaEl.textContent = "0枚";
+        return;
+      }
+
+      photos.forEach(addPhotoCard);
+      loadedCount += photos.length;
+
+      const moreText = nextToken ? "（スクロールで続き）" : "（全件表示）";
+      currentTeamMetaEl.textContent = `${loadedCount}枚表示中 ${moreText}`;
+    } finally {
+      setLoading(false);
+      isLoading = false;
+    }
+  }
+
+  function addPhotoCard(photo) {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.loading = "lazy";
+    img.src = imgUrl(photo.id, true);
+    img.alt = photo.name || "";
+
+    const cap = document.createElement("div");
+    cap.className = "caption";
+    cap.textContent = photo.name || "";
+
+    card.appendChild(img);
+    card.appendChild(cap);
+
+    card.addEventListener("click", () => openLightbox(photo));
+    galleryEl.appendChild(card);
+  }
+
+  function openLightbox(photo) {
+    lightboxTitle.textContent = photo.name || "画像";
+    lightboxImg.src = imgUrl(photo.id, false);
+    lightbox.classList.remove("hidden");
+    lightbox.setAttribute("aria-hidden", "false");
+  }
+
+  function closeLightbox() {
+    lightbox.classList.add("hidden");
+    lightbox.setAttribute("aria-hidden", "true");
+    lightboxImg.src = "";
+  }
+
+  function setupInfiniteScroll() {
+    galleryEl.addEventListener("scroll", async () => {
+      const nearBottom = galleryEl.scrollTop + galleryEl.clientHeight >= galleryEl.scrollHeight - 400;
+      if (nearBottom) await loadMorePhotos();
+    });
+  }
+
+  function setupEvents() {
+    teamSearchEl.addEventListener("input", filterTeams);
+
+    downloadZipBtn.addEventListener("click", () => {
+      if (!activeTeam) return;
+      window.location.href = zipUrl(activeTeam.id);
+    });
+
+    reloadBtn.addEventListener("click", async () => {
+      if (!activeTeam) return loadTeams();
+      const t = activeTeam;
+      await loadTeams();
+      const found = teams.find(x => x.id === t.id) || t;
+      await selectTeam(found);
+    });
+
+    lightboxBackdrop.addEventListener("click", closeLightbox);
+    lightboxClose.addEventListener("click", closeLightbox);
+    window.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") closeLightbox();
+    });
+  }
+
+  async function init() {
+    setupEvents();
+    setupInfiniteScroll();
+    await loadTeams();
+  }
+
+  init();
 })();

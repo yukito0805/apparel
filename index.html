@@ -2,63 +2,90 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>よさこいギャラリー</title>
-  <style><?!= include('styles'); ?></style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Drive Gallery</title>
+
+  <style>
+    <?!= include("style"); ?>
+  </style>
+
+  <script>
+    window.__APP_URL__ = "<?= APP_URL ?>";
+    window.__PARENT_FOLDER_ID__ = "<?= PARENT_FOLDER_ID ?>";
+  </script>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="topbar__left">
-      <button id="backBtn" class="iconBtn" aria-label="戻る" hidden>←</button>
-      <h1 id="title">チーム一覧</h1>
-    </div>
-    <div class="topbar__right">
-      <button id="selectToggleBtn" class="ghostBtn" hidden>選択</button>
-      <button id="clearSelectionBtn" class="ghostBtn" hidden>解除</button>
-    </div>
-  </header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar__header">
+        <div class="brand">
+          <div class="brand__dot"></div>
+          <div class="brand__text">
+            <div class="brand__title">Drive Gallery</div>
+            <div class="brand__sub">親フォルダ → チーム（子フォルダ）</div>
+          </div>
+        </div>
 
-  <main class="container">
-    <section id="teamsView" class="view">
-      <div id="teamsGrid" class="grid"></div>
-      <div id="teamsEmpty" class="empty" hidden>チームがありません</div>
-    </section>
-
-    <section id="galleryView" class="view" hidden>
-      <div class="subinfo">
-        <div class="chip" id="teamChip"></div>
-        <div class="hint">画像タップで拡大。拡大画面で長押し保存しやすいです。</div>
+        <div class="search">
+          <input id="teamSearch" type="text" placeholder="チーム検索…" autocomplete="off" />
+        </div>
       </div>
 
-      <div id="photosGrid" class="masonry"></div>
-      <div id="photosEmpty" class="empty" hidden>写真がありません</div>
-    </section>
-  </main>
+      <div id="teamList" class="teamList"></div>
 
-  <div id="lightbox" class="lightbox" hidden>
-    <div class="lightbox__top">
-      <div class="lightbox__title" id="lightboxTitle"></div>
-      <div class="lightbox__actions">
-        <a id="openOriginalBtn" class="ghostBtn" href="#" target="_blank" rel="noopener">原寸で開く</a>
-        <button id="closeLightboxBtn" class="iconBtn" aria-label="閉じる">✕</button>
+      <div class="sidebar__footer">
+        <div class="hint">サムネイルをクリックで拡大表示</div>
       </div>
-    </div>
-    <div class="lightbox__body">
-      <img id="lightboxImg" alt="" />
-    </div>
-    <div class="lightbox__footer">
-      <div class="hintSmall">モバイル：画像を長押しで保存できます（端末/ブラウザ仕様に依存）</div>
+    </aside>
+
+    <main class="main">
+      <div class="main__header">
+        <div class="titleBlock">
+          <div id="currentTeamName" class="title">チームを選択してください</div>
+          <div id="currentTeamMeta" class="meta"></div>
+        </div>
+
+        <div class="actions">
+          <button id="reloadBtn" class="btn btn--ghost" type="button">再読み込み</button>
+        </div>
+      </div>
+
+      <div id="gallery" class="gallery"></div>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <div class="loading__text">読み込み中…</div>
+      </div>
+
+      <div id="empty" class="empty hidden">
+        <div class="empty__title">画像がありません</div>
+        <div class="empty__sub">このチームフォルダに画像を入れると表示されます。</div>
+      </div>
+    </main>
+
+    <button id="downloadZipBtn" class="fab" type="button" disabled title="このチームをまとめてダウンロード（ZIP）">
+      <span class="fab__icon">⬇</span>
+      <span class="fab__text">まとめてDL</span>
+    </button>
+
+    <div id="lightbox" class="lightbox hidden" aria-hidden="true">
+      <div class="lightbox__backdrop" id="lightboxBackdrop"></div>
+      <div class="lightbox__panel">
+        <div class="lightbox__header">
+          <div id="lightboxTitle" class="lightbox__title">画像</div>
+          <div class="lightbox__spacer"></div>
+          <button id="lightboxClose" class="btn btn--ghost" type="button">閉じる</button>
+        </div>
+        <div class="lightbox__body">
+          <img id="lightboxImg" alt="" />
+        </div>
+      </div>
     </div>
   </div>
 
-  <button id="downloadFab" class="fab" hidden>
-    <span>Download</span>
-    <span id="downloadCount" class="fab__count">0</span>
-  </button>
-
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-
-  <script><?!= include('app'); ?></script>
+  <script>
+    <?!= include("app"); ?>
+  </script>
 </body>
 </html>
