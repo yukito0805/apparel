@@ -1,6 +1,5 @@
 const API_BASE = location.origin + location.pathname;
 
-// DOM
 const titleEl = document.getElementById("title");
 const backBtn = document.getElementById("backBtn");
 
@@ -25,7 +24,6 @@ const openOriginalBtn = document.getElementById("openOriginalBtn");
 const downloadFab = document.getElementById("downloadFab");
 const downloadCount = document.getElementById("downloadCount");
 
-// State
 let teams = [];
 let currentTeam = null;
 let photos = [];
@@ -38,10 +36,7 @@ function apiUrl(params) {
   Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
   return u.toString();
 }
-
-function imageUrl(fileId) {
-  return apiUrl({ action: "img", id: fileId });
-}
+function imageUrl(fileId) { return apiUrl({ action: "img", id: fileId }); }
 
 function escapeHtml(s) {
   return String(s || "")
@@ -57,10 +52,8 @@ function setRoute(teamId = "") {
   else history.pushState({}, "", `${location.pathname}#team=${encodeURIComponent(teamId)}`);
   renderByRoute();
 }
-
 function getRouteTeamId() {
-  const hash = location.hash || "";
-  const m = hash.match(/team=([^&]+)/);
+  const m = (location.hash || "").match(/team=([^&]+)/);
   return m ? decodeURIComponent(m[1]) : "";
 }
 
@@ -84,8 +77,7 @@ function setSelecting(on) {
   selectToggleBtn.textContent = selecting ? "完了" : "選択";
 
   document.querySelectorAll(".photo").forEach((el) => {
-    if (selecting) el.classList.add("is-selecting");
-    else el.classList.remove("is-selecting");
+    el.classList.toggle("is-selecting", selecting);
     const checkboxWrap = el.querySelector(".photo__check");
     if (checkboxWrap) checkboxWrap.style.display = selecting ? "flex" : "none";
   });
@@ -207,7 +199,6 @@ function openLightbox(photo) {
   lightboxImg.src = imageUrl(photo.fileId);
   openOriginalBtn.href = imageUrl(photo.fileId);
 }
-
 function closeLightbox() {
   lightbox.hidden = true;
   lightboxImg.src = "";
@@ -216,11 +207,7 @@ function closeLightbox() {
 }
 
 function sanitizeFileName(name) {
-  return String(name || "file")
-    .replace(/[\\/:*?"<>|]/g, "_")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 80);
+  return String(name || "file").replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
 async function downloadSelectedAsZip() {
@@ -293,11 +280,6 @@ downloadFab.addEventListener("click", async () => {
 });
 
 (async function init() {
-  try {
-    teams = await fetchTeams();
-    await renderByRoute();
-  } catch (err) {
-    teamsEmpty.hidden = false;
-    teamsEmpty.textContent = `読み込みエラー: ${String(err.message || err)}`;
-  }
+  teams = await fetchTeams();
+  await renderByRoute();
 })();
